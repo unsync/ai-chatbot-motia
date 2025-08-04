@@ -1,0 +1,8 @@
+{
+  "name": "ai-chatbot-motia",
+  "description": "Minimal streaming AI chatbot demonstrating real-time responses and state management",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  }
+}

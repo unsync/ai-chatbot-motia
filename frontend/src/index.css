@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the chat app */
+@layer base {
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  html, body, #root {
+    height: 100%;
+  }
+}
+
+@layer components {
+  .message-bubble {
+    @apply max-w-xs sm:max-w-sm md:max-w-md px-4 py-2 rounded-lg break-words;
+  }
+  
+  .user-message {
+    @apply bg-blue-500 text-white ml-auto;
+  }
+  
+  .assistant-message {
+    @apply bg-gray-200 text-gray-800 mr-auto;
+  }
+  
+  .streaming-message {
+    @apply bg-gray-100 text-gray-700 mr-auto;
+  }
+}

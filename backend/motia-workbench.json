@@ -1,0 +1,15 @@
+[
+  {
+    "id": "chat",
+    "config": {
+      "steps/chat-api.step.ts": {
+        "x": 0,
+        "y": 0
+      },
+      "steps/ai-response.step.ts": {
+        "x": 0,
+        "y": 235
+      }
+    }
+  }
+]
