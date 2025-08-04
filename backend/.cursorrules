@@ -1,0 +1,385 @@
+# Spotify Downloader - Cursor Rules
+
+## File Organization & Naming Conventions
+
+### Step Files Structure
+```
+steps/
+├── {service}/              # Group by service/feature (e.g., spotify, youtube, etc.)
+│   ├── api/                # API endpoints directory
+│   │   └── api.{name}.step.ts
+│   ├── events/             # Event handlers directory
+│   │   └── event.{name}.step.ts
+│   ├── services/           # Service classes directory
+│   │   └── {serviceName}.ts
+│   └── types.ts            # Service-specific types
+```
+
+### Naming Patterns
+
+#### API Steps
+- **Pattern**: `api/api.{descriptive-name}.step.ts`
+- **Examples**: 
+  - `api/api.health-check.step.ts`
+  - `api/api.download.step.ts`
+  - `api/api.download-status.step.ts`
+- **Use for**: HTTP endpoints, REST APIs, webhooks
+
+#### Event Steps  
+- **Pattern**: `events/event.{descriptive-name}.step.ts`
+- **Examples**:
+  - `events/event.spotify-auth-check.step.ts`
+  - `events/event.track-process.step.ts`
+  - `events/event.download-completed.step.ts`
+- **Use for**: Background processing, event handlers, workflow steps
+
+#### Step Name Convention
+- **API Steps**: `{Name}Api` pattern
+  - **Examples**: `HealthCheckApi`, `DownloadApi`, `AuthCallbackApi`
+  - **Format**: PascalCase ending with "Api"
+- **Event Steps**: `{Name}Event` pattern  
+  - **Examples**: `SpotifyAuthCheckEvent`, `TrackProcessEvent`, `DownloadCompletedEvent`
+  - **Format**: PascalCase ending with "Event"
+
+### API Path Convention
+- **Pattern**: `/api/{service}/{endpoint}`
+- **Examples**:
+  - `/api/spotify/health`
+  - `/api/spotify/download`
+  - `/api/spotify/download/:downloadId/status`
+  - `/api/youtube/search` (future)
+  - `/api/other/endpoint` (future)
+
+## Implementation Guidelines
+
+### When Creating New Services
+1. Create new directory: `steps/{service-name}/`
+2. Create subdirectories: `api/`, `events/`, `services/`
+3. Follow naming conventions for all step files within subdirectories
+4. Use consistent API path prefixes: `/api/{service-name}/`
+5. Include `types.ts` for service-specific TypeScript definitions
+
+## Service Factory Pattern & Architecture
+
+### Service Class Requirements
+All services in `steps/{service}/services/` must follow these patterns:
+
+#### Factory Pattern Implementation
+```typescript
+export class ServiceNameService {
+  private logger: Logger
+
+  constructor(_: { logger: Logger }) {
+    this.logger = _.logger
+  }
+
+  static init(_: { logger: Logger }): ServiceNameService {
+    return new ServiceNameService({
+      logger: _.logger,
+    })
+  }
+}
+```
+
+#### Logger Integration
+- **Import**: Always use `import type { Logger } from 'motia'`
+- **Usage**: Replace all `console.log/warn/error` with `this.logger.info/warn/error`
+- **Structured Logging**: Use objects for context: `this.logger.info('Message', { key: value })`
+
+#### Function Destructuring
+All service methods must use destructuring parameters:
+
+```typescript
+// ✅ Correct - Use destructuring
+public async methodName(_: { 
+  param1: string
+  param2: number
+  optionalParam?: string 
+}): Promise<ReturnType> {
+  const { param1, param2, optionalParam } = _
+  // implementation
+}
+
+// ❌ Incorrect - Individual parameters
+public async methodName(param1: string, param2: number): Promise<ReturnType> {
+  // Don't do this
+}
+```
+
+#### Service Dependencies
+Services can depend on other services through constructor injection:
+
+```typescript
+export class MainService {
+  private logger: Logger
+  private dependencyService: DependencyService
+
+  constructor(_: { logger: Logger }) {
+    this.logger = _.logger
+    this.dependencyService = DependencyService.init({ logger: _.logger })
+  }
+
+  static init(_: { logger: Logger }): MainService {
+    return new MainService({ logger: _.logger })
+  }
+}
+```
+
+### Service Usage in Steps
+
+#### Event/API Step Service Initialization
+```typescript
+export const handler: Handlers['EventName'] = async (input, { logger, emit, state, traceId }) => {
+  // Initialize services with logger
+  const serviceName = ServiceNameService.init({ logger })
+  
+  // Use service methods with destructuring
+  const result = await serviceName.methodName({
+    param1: input.value,
+    param2: 'some-value',
+  })
+}
+```
+
+### Service File Structure
+```
+steps/{service}/services/
+├── serviceName.ts          # Main service class (e.g., spotify.ts)
+├── helperService.ts        # Helper services (e.g., youtube.ts, downloader.ts)
+└── utilityService.ts       # Utility services (e.g., audioProcessor.ts)
+```
+
+### Service Implementation Examples
+
+#### ✅ Correct Service Pattern
+```typescript
+import type { Logger } from 'motia'
+
+export class SpotifyService {
+  private logger: Logger
+
+  constructor(_: { logger: Logger }) {
+    this.logger = _.logger
+  }
+
+  static init(_: { logger: Logger }): SpotifyService {
+    return new SpotifyService({
+      logger: _.logger,
+    })
+  }
+
+  public async getPlaylistTracks(_: { 
+    spotifyApi: SpotifyWebApi
+    playlistUrl: string 
+  }): Promise<Playlist> {
+    const { spotifyApi, playlistUrl } = _
+    this.logger.info('Fetching playlist tracks', { playlistUrl })
+    // implementation
+  }
+}
+```
+
+#### ✅ Correct Service Usage
+```typescript
+// In event handlers
+const spotifyService = SpotifyService.init({ logger })
+const playlist = await spotifyService.getPlaylistTracks({ 
+  spotifyApi, 
+  playlistUrl 
+})
+```
+
+#### ❌ Incorrect Patterns
+```typescript
+// Don't use individual parameters
+export async function getPlaylistTracks(spotifyApi: SpotifyWebApi, playlistUrl: string): Promise<Playlist>
+
+// Don't use console directly
+console.log('Message')
+
+// Don't pass logger as parameter to each method
+await service.method(data, logger)
+```
+
+### Service Migration Guidelines
+When updating existing services:
+1. Convert standalone functions to class methods
+2. Add factory pattern with `static init({ logger })`
+3. Replace `console.*` with `this.logger.*`
+4. Convert all parameters to destructuring format
+5. Update all consumers to use new factory pattern
+6. Ensure proper dependency injection for service dependencies
+
+## Type Definitions & Schema-First Development
+
+### Zod Schema-First Approach
+All type definitions must follow the **Schema-First** pattern using Zod:
+
+#### Core Principle
+- **Single Source of Truth**: Zod schemas define both runtime validation and TypeScript types
+- **No Duplicate Types**: Never create separate TypeScript types when a Zod schema exists
+- **Runtime Safety**: All data validation happens through Zod schemas
+
+#### Implementation Pattern
+```typescript
+// ✅ Correct - Schema-first approach
+import { z } from 'zod'
+
+// 1. Define Zod schema
+export const trackSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  artist: z.string(),
+  album: z.string(),
+  albumArt: z.string().optional(),
+  duration: z.number(),
+})
+
+// 2. Infer TypeScript type
+export type Track = z.infer<typeof trackSchema>
+
+// 3. Use schema for validation
+const validatedTrack = trackSchema.parse(unknownData)
+```
+
+#### Schema Organization in types.ts
+```typescript
+// Base schemas first
+export const trackSchema = z.object({...})
+export const playlistSchema = z.object({...})
+
+// Extended schemas using .extend()
+export const enhancedTrackSchema = trackSchema.extend({
+  playlistName: z.string(),
+  downloadId: z.string(),
+})
+
+// Enum schemas
+export const downloadStatusSchema = z.enum([
+  'initializing',
+  'downloading',
+  'completed'
+])
+
+// Complex schemas with references
+export const queueStateSchema = z.object({
+  queue: z.array(enhancedTrackSchema),
+  status: downloadStatusSchema,
+})
+
+// Inferred types at the bottom
+export type Track = z.infer<typeof trackSchema>
+export type EnhancedTrack = z.infer<typeof enhancedTrackSchema>
+export type QueueState = z.infer<typeof queueStateSchema>
+```
+
+#### Schema Reuse in Steps
+```typescript
+// ✅ Correct - Import schema from types
+import { enhancedTrackSchema } from '../types'
+
+const inputSchema = z.object({
+  tracks: z.array(enhancedTrackSchema),
+  downloadId: z.string(),
+})
+
+// ❌ Incorrect - Redefining schema
+const enhancedTrackSchema = z.object({
+  id: z.string(),
+  // ... duplicating schema definition
+})
+```
+
+#### Benefits of Schema-First Approach
+- **Runtime Validation**: Automatic validation of API inputs, file data, external APIs
+- **Type Safety**: Full TypeScript intellisense and compile-time checking  
+- **No Type Drift**: Types and validation logic always stay synchronized
+- **Better Error Messages**: Zod provides detailed validation error information
+- **Single Maintenance Point**: Update schema once, type safety everywhere
+
+#### Migration Strategy
+When converting existing types to schemas:
+1. Create Zod schema equivalent in `types.ts`
+2. Export inferred type using `z.infer<typeof schema>`
+3. Replace all usages of old type with new inferred type
+4. Update validation points to use schema.parse()
+5. Remove old TypeScript-only type definitions
+
+### API Step Requirements
+```typescript
+export const config: ApiRouteConfig = {
+  type: 'api',
+  name: '{Name}Api',  // e.g., 'DownloadApi', 'HealthCheckApi'
+  description: 'Clear description of endpoint purpose',
+  path: '/api/{service}/{endpoint}',  // Always follow this pattern
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  // ... other config
+}
+```
+
+### Event Step Requirements
+```typescript
+export const config: EventConfig = {
+  type: 'event',
+  name: '{Name}Event',  // e.g., 'TrackProcessEvent', 'AuthRequiredEvent'
+  description: 'Clear description of event purpose',
+  subscribes: ['event-name'],
+  // ... other config
+}
+```
+
+### File Naming Rules
+- Use lowercase with hyphens for multi-word names
+- Be descriptive but concise
+- Prefix clearly indicates file type (api/event)
+- Always include `.step.ts` suffix
+
+### Directory Organization
+- Group related functionality by service
+- Keep each service's files in organized subdirectories (api/, events/, services/)
+- Service-specific types in `{service}/types.ts`
+- Service classes in `{service}/services/`
+
+## Examples
+
+### ✅ Good Examples
+```
+steps/spotify/api/api.download.step.ts
+steps/spotify/events/event.track-process.step.ts
+steps/spotify/services/spotify.ts
+steps/youtube/api/api.search.step.ts
+steps/youtube/events/event.video-download.step.ts
+steps/youtube/services/youtube.ts
+```
+
+### ❌ Bad Examples
+```
+steps/downloadApi.step.ts           # Missing service grouping
+steps/spotify/download-api.step.ts  # Wrong naming and location
+steps/spotify/download.api.ts       # Wrong suffix
+steps/spotify/api.download.step.ts  # Missing api/ subdirectory
+steps/spotify/event.track.step.ts   # Missing events/ subdirectory
+```
+
+## Future Expansion
+When adding new services (e.g., YouTube, SoundCloud):
+1. Create `steps/{service}/` directory
+2. Create subdirectories: `api/`, `events/`, `services/`
+3. Follow same patterns within subdirectories:
+   - `api/api.{name}.step.ts` for endpoints
+   - `events/event.{name}.step.ts` for event handlers
+   - `services/{serviceName}.ts` for service classes
+4. Use `/api/{service}/` path prefix for all endpoints
+5. Include service-specific `types.ts`
+6. Update documentation with new service structure
+
+## Documentation
+- Always update README.md and MOTIA_API.md when adding new services
+- Include clear examples of API endpoints and event flows
+- Document the purpose and usage of each step file
+
+This organization ensures:
+- Clear separation of concerns
+- Scalable architecture for multiple services
+- Consistent naming and structure
+- Easy navigation and maintenance

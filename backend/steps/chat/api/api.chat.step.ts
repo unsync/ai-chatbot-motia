@@ -1,22 +1,16 @@
 import { ApiRouteConfig, Handlers } from 'motia'
-import { z } from 'zod'
-import { conversationSchema } from './conversation.stream'
-
-const inputSchema = z.object({
-  message: z.string().min(1, 'Message is required'),
-  conversationId: z.string().optional(),
-})
+import { chatInputSchema, streamMessageSchema } from '../types'
 
 export const config: ApiRouteConfig = {
   type: 'api',
   name: 'ChatApi',
   description: 'Send a message to the AI chatbot',
-  path: '/api/chat',
+  path: '/api/chat/message',
   method: 'POST',
   emits: ['chat-message', 'save-message'],
-  bodySchema: inputSchema,
+  bodySchema: chatInputSchema,
   responseSchema: {
-    200: conversationSchema
+    200: streamMessageSchema
   },
   flows: ['chat'],
 }

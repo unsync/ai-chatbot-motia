@@ -53,7 +53,7 @@ function App() {
 
       setIsLoadingHistory(true)
       try {
-        const response = await fetch(`http://localhost:3000/api/conversation/${conversationId}`)
+        const response = await fetch(`http://localhost:3000/api/chat/conversation/${conversationId}`)
         if (response.ok) {
           const conversation = await response.json()
           if (conversation.messages && conversation.messages.length > 0) {
@@ -97,7 +97,7 @@ function App() {
 
     try {
       // Call your Motia backend
-      const response = await fetch('http://localhost:3000/api/chat', {
+      const response = await fetch('http://localhost:3000/api/chat/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

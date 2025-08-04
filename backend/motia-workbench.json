@@ -2,13 +2,21 @@
   {
     "id": "chat",
     "config": {
-      "steps/chat-api.step.ts": {
+      "steps/chat/events/event.save-conversation.step.ts": {
+        "x": 394,
+        "y": 500
+      },
+      "steps/chat/events/event.ai-response.step.ts": {
+        "x": 266,
+        "y": 284
+      },
+      "steps/chat/api/api.conversation-history.step.ts": {
         "x": 0,
         "y": 0
       },
-      "steps/ai-response.step.ts": {
-        "x": 0,
-        "y": 235
+      "steps/chat/api/api.chat.step.ts": {
+        "x": 410,
+        "y": 10
       }
     }
   }

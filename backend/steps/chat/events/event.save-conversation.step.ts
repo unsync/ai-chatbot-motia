@@ -1,24 +1,17 @@
 import { EventConfig, Handlers } from 'motia'
-import { z } from 'zod'
-import {ConversationHistory} from "./types";
+import { saveMessageInputSchema, type ConversationHistory } from '../types'
 
 export const config: EventConfig = {
   type: 'event',
-  name: 'SaveConversation',
+  name: 'SaveConversationEvent',
   description: 'Save messages to conversation history',
   subscribes: ['save-message'],
   emits: [],
-  input: z.object({
-    conversationId: z.string(),
-    messageId: z.string(),
-    message: z.string(),
-    from: z.enum(['user', 'assistant']),
-    timestamp: z.string(),
-  }),
+  input: saveMessageInputSchema,
   flows: ['chat'],
 }
 
-export const handler: Handlers['SaveConversation'] = async (input, { logger, state }) => {
+export const handler: Handlers['SaveConversationEvent'] = async (input, { logger, state }) => {
   const { conversationId, messageId, message, from, timestamp } = input
 
   logger.info('Saving message to conversation history', {

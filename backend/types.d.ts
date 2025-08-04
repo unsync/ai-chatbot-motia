@@ -12,9 +12,9 @@ declare module 'motia' {
   }
 
   type Handlers = {
-    'SaveConversation': EventHandler<{ conversationId: string; messageId: string; message: string; from: 'user' | 'assistant'; timestamp: string }, never>
-    'ConversationHistory': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { conversationId: string; messages: { id: string; message: string; from: 'user' | 'assistant'; timestamp: string }[]; createdAt: string; updatedAt: string }> | ApiResponse<404, { error: string; message: string }> | ApiResponse<500, { error: string; message: string }>, never>
+    'SaveConversationEvent': EventHandler<{ conversationId: string; messageId: string; message: string; from: 'user' | 'assistant'; timestamp: string }, never>
+    'AiResponseEvent': EventHandler<{ message: string; conversationId: string; assistantMessageId: string }, { topic: 'save-message'; data: { conversationId: string; messageId: string; message: string; from: 'user' | 'assistant'; timestamp: string } }>
+    'ConversationHistoryApi': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { conversationId: string; messages: { id: string; message: string; from: 'user' | 'assistant'; timestamp: string }[]; createdAt: string; updatedAt: string }> | ApiResponse<404, { error: string; message: string }> | ApiResponse<500, { error: string; message: string }>, never>
     'ChatApi': ApiRouteHandler<{ message: string; conversationId?: string }, ApiResponse<200, { message: string; delta?: string; from: 'user' | 'assistant'; status: 'created' | 'streaming' | 'completed'; timestamp: string }>, { topic: 'chat-message'; data: { message: string; conversationId: string; assistantMessageId: string } } | { topic: 'save-message'; data: { conversationId: string; messageId: string; message: string; from: 'user' | 'assistant'; timestamp: string } }>
-    'AiResponse': EventHandler<{ message: string; conversationId: string; assistantMessageId: string }, { topic: 'save-message'; data: { conversationId: string; messageId: string; message: string; from: 'user' | 'assistant'; timestamp: string } }>
   }
 }

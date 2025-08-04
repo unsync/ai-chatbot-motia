@@ -1,24 +1,12 @@
 import { ApiRouteConfig, Handlers } from 'motia'
 import { z } from 'zod'
-import {ConversationHistory} from "./types";
-
-const conversationHistorySchema = z.object({
-  conversationId: z.string(),
-  messages: z.array(z.object({
-    id: z.string(),
-    message: z.string(),
-    from: z.enum(['user', 'assistant']),
-    timestamp: z.string(),
-  })),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-})
+import { conversationHistorySchema, type ConversationHistory } from '../types'
 
 export const config: ApiRouteConfig = {
   type: 'api',
-  name: 'ConversationHistory',
+  name: 'ConversationHistoryApi',
   description: 'Retrieve conversation history by ID',
-  path: '/api/conversation/:conversationId',
+  path: '/api/chat/conversation/:conversationId',
   method: 'GET',
   emits: [],
   responseSchema: {
@@ -35,7 +23,7 @@ export const config: ApiRouteConfig = {
   flows: ['chat'],
 }
 
-export const handler: Handlers['ConversationHistory'] = async (req, { logger, state }) => {
+export const handler: Handlers['ConversationHistoryApi'] = async (req, { logger, state }) => {
   const conversationId = req.pathParams.conversationId
 
   logger.info('Retrieving conversation history', { conversationId })
